@@ -4,8 +4,7 @@ var app = express();
 var port = process.env.PORT || 3000;
 
 app.get('/', function (req, res) {
-    console.log('hello from server');
-    //    res.render('./public/index.html');
+    console.log('hello from server');    
 });
 
 app.listen(port);
