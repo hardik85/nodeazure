@@ -1,4 +1,4 @@
-var db = require('../connection');
+//var db = require('../connection');
 
 function getTodos(req, res) {
 
