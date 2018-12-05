@@ -2,10 +2,11 @@
   "name": "azurenode",
   "version": "1.0.0",
   "description": "this is for testing nodejs app on Azure",
-  "main": "server.js",  
+  "main": "server.js",
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.10.8"
+    "express": "^4.10.8",
+    "mysql": "^2.16.0"
   }
 }
