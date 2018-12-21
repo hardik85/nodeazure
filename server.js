@@ -49,8 +49,7 @@ app.use(function (req, res, next) {
 app.use(function (err, req, res, next) {
     handleError(err, req, next);
     res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
-        //data: err.errno != undefined ? 'Something went wrong! Please contact Administrator with Error Number-' + err.errno : "Something went wrong! Please contact Administrator"
-        data: err
+        data: err.errno != undefined ? 'Something went wrong! Please contact Administrator with Error Number-' + err.errno : "Something went wrong! Please contact Administrator"        
     });
 });
 
@@ -77,5 +76,5 @@ function handleError(err, req) {
     commonHelper.LogError(req, new Date().toISOString().slice(0, 19).replace('T', ' '), req.headers["apikey"], req.path, err);
 }
 
-var port = process.env.BACKEND_PORT || process.env.PORT || 3000;
-app.listen(port);
+//var port = process.env.BACKEND_PORT || process.env.PORT || 3000;
+app.listen(7100);
