@@ -1,9 +1,12 @@
 {
-  "name": "azurenode",
+  "name": "oili-jalonen-node-server",
   "version": "1.0.0",
-  "description": "this is for testing nodejs app on Azure",
+  "description": "Read me",
   "main": "server.js",
-  "author": "",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "me",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.17.2",

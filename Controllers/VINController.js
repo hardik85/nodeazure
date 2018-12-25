@@ -72,10 +72,10 @@ exports.getVINDetails = function (req, res, next) {
         });
 }
 
-String.prototype.addAt = function (index, character) {
+String.prototype.addAt = function (index, character, next) {
     try {
         return this.substr(0, index - 1) + character + this.substr(index - 1 + character.length - 1);
-    } catch (ex) {
-        return logger.LogError(next, ex, res);
+    } catch (error) {
+        return '';
     }
 }

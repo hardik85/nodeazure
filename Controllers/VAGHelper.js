@@ -59,7 +59,7 @@ exports.ProcessVIN = function (vinNumber, languageCode, IP, apiKeyId) {
                                                     .then(function (result) {
                                                         if (result[0] == undefined) {
                                                             dbVIN.query('CALL ProcessVagVin(?)', [vinNumber])
-                                                                .then(function (result) {
+                                                                .then(function () {
                                                                     dbVIN.query("SELECT * FROM vagvisinfo WHERE VIN=?", [vinNumber])
                                                                         .then(function (result) {
                                                                             if (result.length == 0) {
@@ -205,13 +205,16 @@ exports.ProcessVIN = function (vinNumber, languageCode, IP, apiKeyId) {
                                                             .catch(function (error) {
                                                                 return reject(error);
                                                             });
-                                                    }, 3000);
+                                                    }, 7000);
                                                 })
                                                 .catch(function (error) {
                                                     return reject(error);
                                                 });
                                         }
                                     })
+                                    .catch(function (error) {
+                                        return reject(error);
+                                    });
                             }
                         })
                         .catch(function (error) {
@@ -230,6 +233,7 @@ function GetVAGVINDetails(response, result, languageCode, vinNumber, IP, apiKeyI
     var subData = response.Data;
     var allPRCodes = result[0].PRCODES.match(/.{1,3}/g);
     data.push(subData);
+
     //#region Find EQCode and description
     var sqlQuery = "SELECT prnumber,`group`,CASE WHEN '" + languageCode + "' = 'en' THEN description_en \
                                             WHEN '" + languageCode + "' = 'sv' THEN description_sv \
@@ -277,16 +281,17 @@ function GetVAGVINDetails(response, result, languageCode, vinNumber, IP, apiKeyI
                     prCodes.push(item);
                 }
                 data.push(prCodes);
+
                 // log success entry
                 commonHelper.SaveLog(data[0].VINNumber, '1', IP, apiKeyId);
-                commonHelper.IncrementCount(apiKeyId, IP);
+                commonHelper.IncrementCount(apiKeyId);
                 return resolve({
                     Status: HttpStatusCode.OK,
                     Data: data
                 });
             }
             else {
-                var subData = [];
+                var prCodes = [];
                 for (var i in allPRCodes) {
                     var item = {};
                     var eqCode = allPRCodes[i];
@@ -295,17 +300,18 @@ function GetVAGVINDetails(response, result, languageCode, vinNumber, IP, apiKeyI
                     item["EQCode"] = eqCode;
                     item["Group"] = group;
                     item["Description"] = description;
-                    subData.push(item);
+                    prCodes.push(item);
                     InsertEQcode(eqCode, vinNumber)
                         .then(function (response) {
                         })
                         .catch(function (err) {
                         });
                 }
-                data.push(subData);
+                data.push(prCodes);
+
                 // log success entry
                 commonHelper.SaveLog(data[0].VINNumber, '1', IP, apiKeyId);
-                commonHelper.IncrementCount(apiKeyId, IP);
+                commonHelper.IncrementCount(apiKeyId);
                 return resolve({
                     Status: HttpStatusCode.OK,
                     Data: data
@@ -360,7 +366,7 @@ function InsertEQcode(eqCode, vinNumber) {
         dbVIN.query("INSERT IGNORE INTO `vagprptionwithoutdescription`(`prnumber`,`vin`) VALUES('" + eqCode + "','" + vinNumber + "')")
             .then(function (result) {
                 return resolve({
-                    status: HttpStatusCode.OK
+                    Status: HttpStatusCode.OK
                 });
             })
             .catch(function (error) {

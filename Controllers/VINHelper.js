@@ -1,8 +1,9 @@
 var db = require('../connection');
 var HttpStatusCode = require('http-status-codes');
 var vagHelper = require('./VAGHelper');
-//var bmwHelper = require('./BMWHelper');
-//var generalVINHelper = require('./GeneralVINHelper');
+var porscheHelper = require('./PorscheHelper');
+var bmwHelper = require('./BMWHelper');
+var generalVINHelper = require('./GeneralVINHelper');
 
 var constants = require('../utils/constants');
 
@@ -27,31 +28,44 @@ exports.IdentifyAndProcessVIN = function (vinNumber, languageCode, IP, apiKeyId)
                                 return reject(error);
                             });
                     }
+                    else if (result[0].Service == "POR") {
+                        porscheHelper.ProcessVIN(vinNumber, languageCode, IP, apiKeyId)
+                            .then(function (response) {
+                                return resolve({
+                                    Status: response.Status,
+                                    Data: response.Data
+                                });
+                            })
+                            .catch(function (error) {
+                                return reject(error);
+                            });
+                    }
                     else if (result[0].Service == "BMW") {
-                        // bmwHelper.ProcessVIN(vinNumber, languageCode, IP, apiKeyId)
-                        //     .then(function (response) {
-                        //         return resolve({
-                        //             Status: response.Status,
-                        //             Data: response.Data
-                        //         });
-                        //     })
-                        //     .catch(function (error) {
-                        //         return reject(error);
-                        //     });
+                        bmwHelper.ProcessVIN(vinNumber, languageCode, IP, apiKeyId)
+                            .then(function (response) {
+                                return resolve({
+                                    Status: response.Status,
+                                    Data: response.Data
+                                });
+                            })
+                            .catch(function (error) {
+                                return reject(error);
+                            });
                     }
                     else if (result != undefined && result[0] != undefined && (result[0].Service == "VOL" || result[0].Service == "HYN"
                         || result[0].Service == "KIA" || result[0].Service == "REN" || result[0].Service == "OPL"
                         || result[0].Service == "MER")) {
-                        // generalVINHelper.ProcessVIN(vinNumber, languageCode, IP, apiKeyId, result[0].Service)
-                        //     .then(function (response) {
-                        //         return resolve({
-                        //             Status: response.Status,
-                        //             Data: response.Data
-                        //         });
-                        //     })
-                        //     .catch(function (error) {
-                        //         return reject(error);
-                        //     });
+                        generalVINHelper.ProcessVIN(vinNumber, languageCode, IP, apiKeyId, result[0].Service)
+                            .then(function (response) {
+                                return resolve({
+                                    Status: response.Status,
+                                    Data: response.Data,
+                                    OriginalModel : response.OriginalModel
+                                });
+                            })
+                            .catch(function (error) {
+                                return reject(error);
+                            });
                     }
                     else {
                         return resolve({

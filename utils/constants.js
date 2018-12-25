@@ -9,5 +9,6 @@ module.exports = {
     UnAuthorized: 'You are not Authorized',
     LicenseDisabled: 'License is disabled',
     LicenseExpired: 'License Expired',
-    MaximumLimitReached: 'Maximum limit reached. Please contact Admin.',    
+    MaximumLimitReached: 'Maximum limit reached. Please contact Admin.',
+    RegPlateRequired: 'RegPlate is required'
 }
