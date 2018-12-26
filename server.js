@@ -22,14 +22,14 @@ var HttpStatusCode = require('http-status-codes');
 
 // Routes files
 var vinRoutes = require('./routes/VIN');
-// var regPlateRoutes = require('./routes/RegPlate');
-// var oeDataRoutes = require('./routes/OEData');
+var regPlateRoutes = require('./routes/RegPlate');
+var oeDataRoutes = require('./routes/OEData');
 
 // contorllers
 var commonHelper = require('./Controllers/CommonHelper');
 
 var corsOptions = {
-  origin: true
+    origin: true
 };
 
 app.use(cors(corsOptions));
@@ -49,11 +49,11 @@ app.use(function (req, res, next) {
 app.use(function (err, req, res, next) {
     handleError(err, req, next);
     res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
-        data: err.errno != undefined ? 'Something went wrong! Please contact Administrator with Error Number-' + err.errno : "Something went wrong! Please contact Administrator"        
+        data: err.errno != undefined ? 'Something went wrong! Please contact Administrator with Error Number-' + err.errno : "Something went wrong! Please contact Administrator"
     });
 });
 
-app.use(function (req, res, next) {        
+app.use(function (req, res, next) {
     var headers = {};
 
     //set header to handle the CORS    
@@ -64,8 +64,8 @@ app.use(function (req, res, next) {
     headers['Access-Control-Allow-Credentials'] = true;
     res.writeHead(200, headers);
 
-     if ( req.method === 'OPTIONS' ) {
-        console.log('OPTIONS SUCCESS');        
+    if (req.method === 'OPTIONS') {
+        console.log('OPTIONS SUCCESS');
     }
 
     next();
