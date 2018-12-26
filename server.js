@@ -37,8 +37,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use('/VIN', vinRoutes);
-// app.use('/RegPlate', regPlateRoutes);
-// app.use('/OEData', oeDataRoutes);
+app.use('/RegPlate', regPlateRoutes);
+app.use('/OEData', oeDataRoutes);
 
 // Invalid URL handling
 app.use(function (req, res, next) {
