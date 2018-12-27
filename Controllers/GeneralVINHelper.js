@@ -2,7 +2,6 @@ var dbVIN = require('../connection_vindata_additional');
 var volvobasedata = require('../connection_volvo_basedata');
 var volvoEPC = require('../connection_volvo_epc');
 var volvoParts = require('../connection_volvo_parts');
-var basedatadb = require('../connection_volvo_basedata');
 var traffiDB = require('../connection_traffi');
 var commonHelper = require('./CommonHelper');
 var vinHelper = require('./VINHelper');
@@ -602,9 +601,9 @@ exports.ProcessVINForOEData = function (vinNumber, languageCode, originalCategor
 
 function GetVolvoDetailsFromBaseDataDB(vinNumber) {
     return new Promise(function (resolve, reject) {
-        basedatadb.query("CALL getVINComponentsByPartnerGroupId('" + vinNumber + "',1002)")
+        volvobasedata.query("CALL getVINComponentsByPartnerGroupId('" + vinNumber + "',1002)")
             .then(function (result) {
-                if (result && result.length > 0) {
+                if (result && result.length > 0 && result[0].length > 0) {
                     var index = 0;
                     var i = 0;
                     var year = "-";
@@ -746,81 +745,120 @@ function GetGeneralVINDetails(response, result, vinNumber, IP, apiKeyId, resolve
     var data = [];
     var subData = response.Data;
     var originalModel = subData["Model"];
-    var sqlQuery = '';
-    if (result[0].Make == 'Volvo') {
-        sqlQuery = 'CALL ProcessVolvoVin(?)';
-    }
-    else if (result[0].Make == 'Kia') {
-        sqlQuery = 'CALL ProcessKiaVin(?)';
-    }
-    else if (result[0].Make == 'Renault') {
-        sqlQuery = 'CALL ProcessRenaultVin(?)';
-    }
-    else if (result[0].Make == 'Hyundai') {
-        sqlQuery = 'CALL ProcessHyundaiVin(?)';
-    }
-    else if (result[0].Make == 'Mercedes') {
-        sqlQuery = 'CALL ProcessMercedesVin(?)';
-    }
-    else if (result[0].Make == 'Opel') {
-        sqlQuery = 'CALL ProcessOpelVin(?)';
-    }
-    else {
-        sqlQuery = 'CALL ProcessVolvoVin(?)';
-    }
-    dbVIN.query(sqlQuery, [vinNumber])
-        .then(function (vinResult) {
-            if (vinResult[0][0].nKtype > 1) {
-                subData["Drive"] = vinResult[0][0].nDriveType ? vinResult[0][0].nDriveType : "-";
-                subData["BodyType"] = vinResult[0][0].nBodyType ? vinResult[0][0].nBodyType : "-";
-                subData["PowerkW"] = vinResult[0][0].nkW ? vinResult[0][0].nkW + " kW" : "-";
-                subData["PowerPS"] = vinResult[0][0].nPS ? vinResult[0][0].nPS + " PS" : "-";
-                subData["Capacity"] = vinResult[0][0].nCCM ? vinResult[0][0].nCCM + " ccm" : "-";
-                subData["FuelType"] = vinResult[0][0].nFuelType ? vinResult[0][0].nFuelType : "-";
-                subData["FuelMixture"] = vinResult[0][0].nFuelMixture ? vinResult[0][0].nFuelMixture : "-";
-                subData["K-type"] = vinResult[0][0].nKtype ? vinResult[0][0].nKtype : "-";
-                subData["KBANr"] = vinResult[0][0].nKBANR ? vinResult[0][0].nKBANR.replace(' ', '') : "-";
-                subData["Model"] = vinResult[0][0].nFullModel ? vinResult[0][0].nFullModel : subData["Model"];
+
+    // If K-type is found then no need to process it using Procedure
+    if (result[0].Ktype != null) {
+        dbVIN.query("SELECT * FROM `gtl_passenger_cars` WHERE ktypeid=?", [result[0].Ktype])
+            .then(function (ktypePassengerCarResult) {
+                if (ktypePassengerCarResult.length > 0) {
+                    subData["Drive"] = ktypePassengerCarResult[0].DriveType ? ktypePassengerCarResult[0].DriveType : "-";
+                    subData["BodyType"] = ktypePassengerCarResult[0].BodyType ? ktypePassengerCarResult[0].BodyType : "-";
+                    subData["PowerkW"] = ktypePassengerCarResult[0].Power_KW ? ktypePassengerCarResult[0].Power_KW : "-";
+                    subData["PowerPS"] = ktypePassengerCarResult[0].Power_PS ? ktypePassengerCarResult[0].Power_PS : "-";
+                    subData["Capacity"] = ktypePassengerCarResult[0].Capacity_Technical ? ktypePassengerCarResult[0].Capacity_Technical : "-";
+                    subData["FuelType"] = ktypePassengerCarResult[0].FuelType ? ktypePassengerCarResult[0].FuelType : "-";
+                    subData["FuelMixture"] = ktypePassengerCarResult[0].FuelMixture ? ktypePassengerCarResult[0].FuelMixture : "-";
+                    subData["K-type"] = ktypePassengerCarResult[0].ktypeid ? ktypePassengerCarResult[0].ktypeid : "-";
+                    subData["KBANr"] = ktypePassengerCarResult[0].KBANumber != null ? ktypePassengerCarResult[0].KBANumber.split(',')[0].replace(' ', '') : "-";
+                    subData["Model"] = ktypePassengerCarResult[0].FullDescription ? ktypePassengerCarResult[0].FullDescription : subData["Model"];
+                }
 
                 return ProcessDataForCodes(originalModel);
-            }
-            else {
-                traffiDB.query("SELECT ktypenr01 FROM `trafidata02` WHERE `VINNumber`=?", [vinNumber])
-                    .then(function (ktypeResult) {
-                        if (ktypeResult.length > 0) {
-                            dbVIN.query("SELECT * FROM `gtl_passenger_cars` WHERE ktypeid=?", [ktypeResult[0].ktypenr01])
-                                .then(function (ktypePassengerCarResult) {
-                                    if (ktypePassengerCarResult.length > 0) {
-                                        subData["Drive"] = ktypePassengerCarResult[0].DriveType ? ktypePassengerCarResult[0].DriveType : "-";
-                                        subData["BodyType"] = ktypePassengerCarResult[0].BodyType ? ktypePassengerCarResult[0].BodyType : "-";
-                                        subData["PowerkW"] = ktypePassengerCarResult[0].Power_KW ? ktypePassengerCarResult[0].Power_KW : "-";
-                                        subData["PowerPS"] = ktypePassengerCarResult[0].Power_PS ? ktypePassengerCarResult[0].Power_PS : "-";
-                                        subData["Capacity"] = ktypePassengerCarResult[0].Capacity_Technical ? ktypePassengerCarResult[0].Capacity_Technical : "-";
-                                        subData["FuelType"] = ktypePassengerCarResult[0].FuelType ? ktypePassengerCarResult[0].FuelType : "-";
-                                        subData["FuelMixture"] = ktypePassengerCarResult[0].FuelMixture ? ktypePassengerCarResult[0].FuelMixture : "-";
-                                        subData["K-type"] = ktypePassengerCarResult[0].ktypeid ? ktypePassengerCarResult[0].ktypeid : "-";
-                                        subData["KBANr"] = ktypePassengerCarResult[0].KBANumber != null ? ktypePassengerCarResult[0].KBANumber.split(',')[0].replace(' ', '') : "-";
-                                        subData["Model"] = ktypePassengerCarResult[0].FullDescription ? ktypePassengerCarResult[0].FullDescription : subData["Model"];
-                                    }
+            })
+            .catch(function (error) {
+                return reject(error);
+            });
+    }
+    else {
+        var sqlQuery = '';
+        if (result[0].Make == 'Volvo') {
+            sqlQuery = 'CALL ProcessVolvoVin(?)';
+        }
+        else if (result[0].Make == 'Kia') {
+            sqlQuery = 'CALL ProcessKiaVin(?)';
+        }
+        else if (result[0].Make == 'Renault') {
+            sqlQuery = 'CALL ProcessRenaultVin(?)';
+        }
+        else if (result[0].Make == 'Hyundai') {
+            sqlQuery = 'CALL ProcessHyundaiVin(?)';
+        }
+        else if (result[0].Make == 'Mercedes') {
+            sqlQuery = 'CALL ProcessMercedesVin(?)';
+        }
+        else if (result[0].Make == 'Opel') {
+            sqlQuery = 'CALL ProcessOpelVin(?)';
+        }
+        else {
+            sqlQuery = 'CALL ProcessVolvoVin(?)';
+        }
+        dbVIN.query(sqlQuery, [vinNumber])
+            .then(function (vinResult) {
+                if (vinResult[0][0].nKtype > 1) {
+                    subData["Drive"] = vinResult[0][0].nDriveType ? vinResult[0][0].nDriveType : "-";
+                    subData["BodyType"] = vinResult[0][0].nBodyType ? vinResult[0][0].nBodyType : "-";
+                    subData["PowerkW"] = vinResult[0][0].nkW ? vinResult[0][0].nkW + " kW" : "-";
+                    subData["PowerPS"] = vinResult[0][0].nPS ? vinResult[0][0].nPS + " PS" : "-";
+                    subData["Capacity"] = vinResult[0][0].nCCM ? vinResult[0][0].nCCM + " ccm" : "-";
+                    subData["FuelType"] = vinResult[0][0].nFuelType ? vinResult[0][0].nFuelType : "-";
+                    subData["FuelMixture"] = vinResult[0][0].nFuelMixture ? vinResult[0][0].nFuelMixture : "-";
+                    subData["K-type"] = vinResult[0][0].nKtype ? vinResult[0][0].nKtype : "-";
+                    subData["KBANr"] = vinResult[0][0].nKBANR ? vinResult[0][0].nKBANR.replace(' ', '') : "-";
+                    subData["Model"] = vinResult[0][0].nFullModel ? vinResult[0][0].nFullModel : subData["Model"];
 
-                                    return ProcessDataForCodes(originalModel);
-                                })
-                                .catch(function (error) {
-                                    return reject(error);
-                                });
-                        }
-                        else {
+                    dbVIN.query("UPDATE `vindata_general` SET KTYPE=? WHERE VIN = ?", [subData["K-type"], vinNumber])
+                        .then(function () {
                             return ProcessDataForCodes(originalModel);
-                        }
-                    })
-                    .catch(function (error) {
-                        return reject(error);
-                    });
-            }
-        })
-        .catch(function (error) {
-            return reject(error);
-        });
+                        })
+                        .catch(function (error) {
+                            return reject(error);
+                        });
+                }
+                else {
+                    traffiDB.query("SELECT ktypenr01 FROM `trafidata02` WHERE `VINNumber`=?", [vinNumber])
+                        .then(function (ktypeResult) {
+                            if (ktypeResult.length > 0) {
+                                dbVIN.query("SELECT * FROM `gtl_passenger_cars` WHERE ktypeid=?", [ktypeResult[0].ktypenr01])
+                                    .then(function (ktypePassengerCarResult) {
+                                        if (ktypePassengerCarResult.length > 0) {
+                                            subData["Drive"] = ktypePassengerCarResult[0].DriveType ? ktypePassengerCarResult[0].DriveType : "-";
+                                            subData["BodyType"] = ktypePassengerCarResult[0].BodyType ? ktypePassengerCarResult[0].BodyType : "-";
+                                            subData["PowerkW"] = ktypePassengerCarResult[0].Power_KW ? ktypePassengerCarResult[0].Power_KW : "-";
+                                            subData["PowerPS"] = ktypePassengerCarResult[0].Power_PS ? ktypePassengerCarResult[0].Power_PS : "-";
+                                            subData["Capacity"] = ktypePassengerCarResult[0].Capacity_Technical ? ktypePassengerCarResult[0].Capacity_Technical : "-";
+                                            subData["FuelType"] = ktypePassengerCarResult[0].FuelType ? ktypePassengerCarResult[0].FuelType : "-";
+                                            subData["FuelMixture"] = ktypePassengerCarResult[0].FuelMixture ? ktypePassengerCarResult[0].FuelMixture : "-";
+                                            subData["K-type"] = ktypePassengerCarResult[0].ktypeid ? ktypePassengerCarResult[0].ktypeid : "-";
+                                            subData["KBANr"] = ktypePassengerCarResult[0].KBANumber != null ? ktypePassengerCarResult[0].KBANumber.split(',')[0].replace(' ', '') : "-";
+                                            subData["Model"] = ktypePassengerCarResult[0].FullDescription ? ktypePassengerCarResult[0].FullDescription : subData["Model"];
+
+                                            dbVIN.query("UPDATE `vindata_general` SET KTYPE=? WHERE VIN = ?", [subData["K-type"], vinNumber])
+                                                .then(function () {
+                                                })
+                                                .catch(function (error) {
+                                                    return reject(error);
+                                                });
+                                        }
+
+                                        return ProcessDataForCodes(originalModel);
+                                    })
+                                    .catch(function (error) {
+                                        return reject(error);
+                                    });
+                            }
+                            else {
+                                return ProcessDataForCodes(originalModel);
+                            }
+                        })
+                        .catch(function (error) {
+                            return reject(error);
+                        });
+                }
+            })
+            .catch(function (error) {
+                return reject(error);
+            });
+    }
 
     function ProcessDataForCodes(originalModel) {
         data.push(subData);

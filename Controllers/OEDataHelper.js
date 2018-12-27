@@ -18,7 +18,8 @@ exports.IdentifyAndProcessVIN = function (vinNumber, languageCode, categoryCode,
                         .then(function (response) {
                             return resolve({
                                 Status: response.Status,
-                                Data: response.Data
+                                Data: response.Data,
+                                Make: result[0].Service
                             });
                         })
                         .catch(function (error) {
@@ -30,7 +31,8 @@ exports.IdentifyAndProcessVIN = function (vinNumber, languageCode, categoryCode,
                         .then(function (response) {
                             return resolve({
                                 Status: response.Status,
-                                Data: response.Data
+                                Data: response.Data,
+                                Make: result[0].Service
                             });
                         })
                         .catch(function (error) {

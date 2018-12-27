@@ -153,14 +153,14 @@ exports.ProcessVINForOEData = function (vinNumber, categoryCode, iso, regiso, IP
                     commonHelper.IncrementCount(apiKeyId);
 
                     return resolve({
-                        Statsu: HttpStatusCode.OK,
+                        Status: HttpStatusCode.OK,
                         Data: data
                     });
                 }
                 else {
                     commonHelper.SaveLog(vinNumber, categoryCode, IP, apiKeyId);
                     return resolve({
-                        Statsu: HttpStatusCode.NOT_FOUND,
+                        Status: HttpStatusCode.NOT_FOUND,
                         Data: constants.NoDataFound
                     });
                 }
@@ -300,20 +300,8 @@ function GetBMWVINDetails(result, response, languageCode, reject, vinNumber, IP,
 
                 //#region  If data not found for K-type then check it from Traffidata
                 if (data[0]['K-type'] == "-") {
-                    commonHelper.GetDataFromTraffi(vinNumber)
-                        .then(function (response) {
-                            if (response.Status == HttpStatusCode.OK) {
-                                data[0].Model = response.Data[0].Model;
-                                data[0].Capacity = response.Data[0].Capacity;
-                                data[0].BodyType = response.Data[0].BodyType;
-                                data[0].Drive = response.Data[0].DriveType;
-                                data[0].PowerkW = response.Data[0].PowerkW;
-                                data[0].PowerPS = response.Data[0].PowerPS;
-                                data[0].FuelType = response.Data[0].FuelType ? response.Data[0].FuelType : data[0].FuelType;
-                                data[0].FuelMixture = response.Data[0].FuelMixture ? response.Data[0].FuelMixture : data[0].FuelMixture;
-                                data[0]['K-type'] = response.Data[0]["K-type"] ? response.Data[0]["K-type"] : '-';
-                                data[0].KBANr = response.Data[0].KBANr != null ? response.Data[0].KBANr.split(',')[0].replace(' ', '') : data[0].KBANr;
-                            }
+                    commonHelper.GetKtypeDataFromTraffi(vinNumber, data)
+                        .then(function () {
                         })
                         .catch(function (error) {
                             return reject(error);
@@ -347,6 +335,45 @@ function GetBMWVINDetails(result, response, languageCode, reject, vinNumber, IP,
                         Data: data
                     });
                 }
+            }
+            else {
+                //#region Set Drivetype name
+                if (data[0]["Drive"] == '2WD') {
+                    data[0]["Drive"] = "Two Wheel Drive";
+                }
+                else if (data[0]["Drive"] == '4WD') {
+                    data[0]["Drive"] = "All Wheel Drive";
+                }
+                //#endregion
+
+                //#region Set Transmission name
+                if (data[0]["Transmission"] == 'N' || data[0]["Transmission"] == 'M') {
+                    data[0]["Transmission"] = "Manual Transmission";
+                }
+                else if (data[0]["Transmission"] == 'A') {
+                    data[0]["Transmission"] = "Automatic Transmission";
+                }
+                //#endregion                             
+
+                //#region  If data not found for K-type then check it from Traffidata
+                if (data[0]['K-type'] == "-") {
+                    commonHelper.GetKtypeDataFromTraffi(vinNumber, data)
+                        .then(function () {
+                        })
+                        .catch(function (error) {
+                            return reject(error);
+                        });
+                }
+                //#endregion
+
+                if (data.length == 1) {
+                    data.push(optionCode);
+                }
+
+                return resolve({
+                    Status: HttpStatusCode.OK,
+                    Data: data
+                });
             }
         })
         .catch(function (error) {

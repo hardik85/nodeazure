@@ -28,8 +28,8 @@ exports.OEPartsByCategory = function (req, res, next) {
                 var apiLogId = 0;
                 var iso = "en", regiso = "US";
 
-                iso = req.params.iso != 'en' ? req.params.iso : iso;
-                regiso = req.params.iso != 'en' ? '' : regiso;
+                iso = (req.params.iso != undefined && req.params.iso != 'en') ? req.params.iso : iso;
+                regiso = (req.params.iso != undefined && req.params.iso != 'en') ? '' : regiso;
                 var languageCode = iso;
                 //#endregion
 
@@ -43,11 +43,16 @@ exports.OEPartsByCategory = function (req, res, next) {
                                 .then(function (response) {
                                     if (response.Status == HttpStatusCode.OK) {
                                         apiLogId = response.APILogId;
-                                        oedataHelper.IdentifyAndProcessVIN(vinNumber,languageCode, categoryCode, iso, regiso, IP, apiKeyId)
+                                        oedataHelper.IdentifyAndProcessVIN(vinNumber, languageCode, categoryCode, iso, regiso, IP, apiKeyId)
                                             .then(function (response) {
                                                 db.query("UPDATE gtl_api_log SET Modified = ?,IPAddress=? WHERE Id = ?", [new Date().toISOString().slice(0, 19).replace('T', ' '), IP, apiLogId])
                                                     .then(function () {
-                                                        res.status(response.Status).json(response.Data);
+                                                        if (response.Make == "BMW") {
+                                                            res.status(response.Status).json({ data: response.Data });
+                                                        }
+                                                        else if (response.Make == "VOL") {
+                                                            res.status(response.Status).json(response.Data);
+                                                        }
                                                     })
                                                     .catch(function (error) {
                                                         return next(error);
